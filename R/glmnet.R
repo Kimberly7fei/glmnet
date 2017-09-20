@@ -19,6 +19,7 @@ glmnet=function(x,y,family=c("gaussian","binomial","poisson","multinomial","cox"
    ###check dims
   if(is.null(np)|(np[2]<=1))stop("x should be a matrix with 2 or more columns")
  nobs=as.integer(np[1])
+  # weights是每个observation的权重
   if(missing(weights))weights=rep(1,nobs)
   else if(length(weights)!=nobs)stop(paste("number of elements in weights (",length(weights),") not equal to the number of rows of x (",nobs,")",sep=""))
   nvars=as.integer(np[2])
@@ -30,6 +31,7 @@ glmnet=function(x,y,family=c("gaussian","binomial","poisson","multinomial","cox"
   ne=as.integer(dfmax)
     nx=as.integer(pmax)
     if(missing(exclude))exclude=integer(0)
+    # penalty.factor是每个特征的权重
     if(any(penalty.factor==Inf)){
         exclude=c(exclude,seq(nvars)[penalty.factor==Inf])
         exclude=sort(unique(exclude))
@@ -73,6 +75,7 @@ glmnet=function(x,y,family=c("gaussian","binomial","poisson","multinomial","cox"
   if(!missing(intercept)&&family=="cox")warning("Cox model has no intercept")
   jsd=as.integer(standardize.response)
   thresh=as.double(thresh)
+  # 一般情况下, lambda为未知的
   if(is.null(lambda)){
      if(lambda.min.ratio>=1)stop("lambda.min.ratio should be less than 1")
     flmin=as.double(lambda.min.ratio)
@@ -86,6 +89,7 @@ glmnet=function(x,y,family=c("gaussian","binomial","poisson","multinomial","cox"
   }
   is.sparse=FALSE
   ix=jx=NULL
+  # 一般x不是sparseMatrix格式 inherits功能与is近似
   if(inherits(x,"sparseMatrix")){##Sparse case
     is.sparse=TRUE
     x=as(x,"CsparseMatrix")
@@ -95,7 +99,7 @@ glmnet=function(x,y,family=c("gaussian","binomial","poisson","multinomial","cox"
     x=as.double(x@x)
   }
 
-
+  # kopt?
   kopt=switch(match.arg(type.logistic),
    "Newton"=0,#This means to use the exact Hessian
     "modified.Newton"=1 # Use the upper bound
@@ -106,6 +110,10 @@ glmnet=function(x,y,family=c("gaussian","binomial","poisson","multinomial","cox"
     }
   kopt=as.integer(kopt)
 
+  # is.sparse = FALSE, ix=jx=NULL, weights是每个observation的权重, offset?, alpha选择哪种正则化, nobs=as.integer(dim(x)[1])行, 
+  # nvars=as.integer(dim(x)[2])列, jd=0, vp=penalty.factor=rep(1,nvars), cl=rbind(lower.limits,upper.limits), ne=dfmax=nvars+1,
+  # nx=pmax, nlam=as.integer(length(lambda))但是一般情况下nlam未定义?, flmin=as.double(lambda.min.ratio)一般情况下, ulam=double(1), 
+  # thresh=1e-7, isd=1, intr=1, vnames: featurenames, maxit?
   fit=switch(family,
     "gaussian"=elnet(x,is.sparse,ix,jx,y,weights,offset,type.gaussian,alpha,nobs,nvars,jd,vp,cl,ne,nx,nlam,flmin,ulam,thresh,isd,intr,vnames,maxit),
     "poisson"=fishnet(x,is.sparse,ix,jx,y,weights,offset,alpha,nobs,nvars,jd,vp,cl,ne,nx,nlam,flmin,ulam,thresh,isd,intr,vnames,maxit),
